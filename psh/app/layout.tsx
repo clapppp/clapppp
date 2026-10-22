@@ -14,12 +14,13 @@ export default function RootLayout({
   children: React.ReactNode;//children은 같은디렉토리의 page파일
 }>) {
   return (
-    <html lang="en">
-      <body className={`${GeistSans.className}`}>
-        <div className="pr-10 fixed top-0 -left-40 hover:left-0 ease-out duration-300">
-          <NavBar />
-        </div>
-        <div>{children}</div>
+    <html lang="ko">
+      <body className={`${GeistSans.className} antialiased`}>
+        <NavBar />
+        <main className="mx-auto w-full max-w-3xl px-5 pt-28 pb-24">{children}</main>
+        <footer className="mx-auto max-w-3xl px-5 pb-10 text-sm text-[var(--muted)]">
+          © {new Date().getFullYear()} Park Suhyeon
+        </footer>
       </body>
     </html>
   );
