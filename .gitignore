@@ -1,0 +1,19 @@
+# SSH / TLS 개인 키 (절대 커밋하지 않는다)
+*.key
+*.pem
+*.ppk
+ssh-key-*
+id_rsa
+id_rsa.*
+id_ed25519
+id_ed25519.*
+id_ecdsa
+id_ecdsa.*
+!*.pub
+
+# 환경변수
+.env
+.env.*
+!.env.example
+
+.DS_Store
