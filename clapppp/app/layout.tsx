@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import NavBar from "./ui/navbar";
 import { GeistSans } from "geist/font/sans";
+import { FaGithub } from "react-icons/fa";
 
 export const metadata: Metadata = {
   title: "Park Suhyeon",
@@ -16,11 +17,15 @@ export default function RootLayout({
   return (
     <html lang="ko">
       <body className={`${GeistSans.className} antialiased`}>
-        <NavBar />
-        <main className="mx-auto w-full max-w-3xl px-5 pt-28 pb-24">{children}</main>
-        <footer className="mx-auto max-w-3xl px-5 pb-10 text-sm text-[var(--muted)]">
-          © {new Date().getFullYear()} Park Suhyeon
-        </footer>
+        <div className="mx-auto w-full max-w-xl px-6 py-12">
+          <NavBar />
+          <main className="mt-14 min-h-[50vh]">{children}</main>
+          <footer className="mt-16 flex gap-4 text-sm text-[var(--muted)]">
+            <a href="https://github.com/clapppp" className="flex items-center gap-1.5 hover:text-[var(--text)]">
+              <FaGithub size={14} /> github
+            </a>
+          </footer>
+        </div>
       </body>
     </html>
   );

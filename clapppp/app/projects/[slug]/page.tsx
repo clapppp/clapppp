@@ -18,21 +18,19 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
 
   return (
     <article className="flex flex-col gap-8">
-      <header className="flex flex-col gap-3">
-        <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight">{project.title}</h1>
+      <header className="flex flex-col gap-2">
+        <h1 className="text-xl font-semibold tracking-tight">{project.title}</h1>
         <p className="text-[var(--muted)]">{project.summary}</p>
-        <div className="flex flex-wrap items-center gap-2">
+        <p className="flex flex-wrap gap-x-3 text-sm text-[var(--muted)]">
           {project.tags.map((tag) => (
-            <span key={tag} className="rounded-full border border-[var(--border)] px-2.5 py-0.5 text-xs text-[var(--muted)]">
-              {tag}
-            </span>
+            <span key={tag}>{tag}</span>
           ))}
           {project.repo && (
-            <a href={project.repo} className="ml-auto text-sm text-[var(--accent)] hover:underline underline-offset-4">
-              GitHub →
+            <a href={project.repo} className="underline hover:text-[var(--text)]">
+              github
             </a>
           )}
-        </div>
+        </p>
       </header>
 
       {project.demo && <Demo slug={project.slug} />}

@@ -1,5 +1,5 @@
 import { getAllProjects } from "@/lib/projects";
-import ProjectCard from "../ui/projectcard";
+import EntryList from "../ui/entrylist";
 
 export const metadata = { title: "Projects · Park Suhyeon" };
 
@@ -8,12 +8,19 @@ export default function ProjectsPage() {
 
   return (
     <div className="flex flex-col gap-8">
-      <h1 className="text-3xl font-semibold tracking-tight">Projects</h1>
-      <div className="grid gap-4 sm:grid-cols-2">
-        {projects.map((p) => (
-          <ProjectCard key={p.slug} project={p} />
-        ))}
-      </div>
+      <h1 className="text-xl font-semibold tracking-tight">projects</h1>
+      {projects.length === 0 ? (
+        <p className="text-sm text-[var(--muted)]">준비 중입니다.</p>
+      ) : (
+        <EntryList
+          entries={projects.map((p) => ({
+            href: `/projects/${p.slug}`,
+            label: p.tags[0] ?? "",
+            title: p.title,
+            summary: p.summary,
+          }))}
+        />
+      )}
     </div>
   );
 }

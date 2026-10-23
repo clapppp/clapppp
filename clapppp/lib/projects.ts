@@ -9,9 +9,10 @@ export type ProjectMeta = {
   demo: boolean; // 사이트 안에서 바로 실행되는 데모가 있는지
 };
 
+// 프로젝트를 붙일 때 여기에 한 줄씩 추가한다. (지금은 비워 둠)
 export const projects: ProjectMeta[] = [
-  { slug: "websocket", pkg: "websocket-playground", demo: true },
-  { slug: "peercon", pkg: "peercon-docs", demo: false },
+  // { slug: "websocket", pkg: "websocket-playground", demo: true },
+  // { slug: "peercon", pkg: "peercon-docs", demo: false },
 ];
 
 export type Project = ProjectMeta & {

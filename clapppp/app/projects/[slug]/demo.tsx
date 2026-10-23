@@ -11,7 +11,7 @@ export default function Demo({ slug }: { slug: string }) {
   const Component = demos[slug];
   if (!Component) return null;
   return (
-    <div className="h-[420px] sm:h-[520px] overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)]">
+    <div className="h-[420px] sm:h-[480px] overflow-hidden rounded border border-[var(--border)]">
       <Component />
     </div>
   );
