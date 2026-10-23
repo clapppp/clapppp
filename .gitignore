@@ -17,3 +17,10 @@ id_ecdsa.*
 !.env.example
 
 .DS_Store
+
+# Jekyll
+_site/
+.jekyll-cache/
+.sass-cache/
+vendor/
+Gemfile.lock
