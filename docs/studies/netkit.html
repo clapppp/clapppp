@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>Netkit 논문 리뷰</title>
+  <style>body { max-width: 36em; margin: 4em auto; padding: 0 1em; text-align: center; }</style>
+</head>
+<body>
+  <p><a href="../studies.html">공부한 것들</a></p>
+
+  <h1>Netkit 논문 리뷰</h1>
+  <p><small>2026-10-15 · 개별연구 7주차</small></p>
+
+  <p>
+    <em>Netkit: Specializing Linux Packet Delivery for Container Networks</em><br>
+    Daniel Borkmann, Paul Chaignon · eBPF'26
+  </p>
+
+  <p>
+    컨테이너끼리 통신할 때 패킷이 veth 쌍을 거치면서 backlog 큐를 불필요하게 두 번 지나는 문제와,
+    netkit 디바이스와 <code>bpf_redirect_peer()</code>로 이를 줄이는 설계를 정리했습니다.
+    평가에서는 veth 대비 처리량이 크게 늘고 호스트 네트워킹과 오차 범위 내로 비슷했으며,
+    직접 구성한 실험에서는 ping 한 번에 backlog로 들어간 횟수가 40번에서 20번으로 줄었습니다.
+  </p>
+
+  <iframe src="../files/netkit-review.pdf#view=FitH" width="100%" height="400" title="Netkit 논문 리뷰"></iframe>
+  <hr>
+</body>
+</html>
