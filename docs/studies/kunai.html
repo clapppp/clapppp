@@ -21,8 +21,9 @@
     패킷 필터는 헤더 위치를 알아야 원하는 필드를 비교할 수 있다.
     그런데 IPv4 옵션이나 GTP 확장 헤더처럼 길이와 개수가 가변인 헤더가 있으면 오프셋을 컴파일 타임에 계산할 수 없고,
     터널링으로 캡슐화가 중첩되면 outer · inner IPv4처럼 같은 이름의 헤더를 구분할 수 없다.
-    기존의 pcap-filter(cBPF)는 반복문과 중첩 구조를 표현할 문법이 없고,
-    P4-to-eBPF는 런타임 가변 길이 접근과, 콜백을 정해진 횟수만큼 반복 실행하는 BPF 헬퍼 함수 <code>bpf_loop</code>를 지원하지 않아 고정 구조만 처리할 수 있다.
+    기존의 pcap-filter는 cBPF에 루프가 없어 개수가 가변인 구조를 반복 처리할 수 없고, 필터 문법으로는 같은 이름의 헤더를 구분할 수 없다.
+    
+    P4-to-eBPF는 런타임 가변 길이 접근과, 콜백을 지정한 횟수까지 반복 실행하는(콜백이 1을 반환하면 중단) BPF 헬퍼 함수 <code>bpf_loop</code>를 지원하지 않아 고정 구조만 처리할 수 있다.
   </p>
 
   <p>
@@ -33,9 +34,10 @@
   </p>
 
   <p>
-    평가는 필터 F1–F10을 Kunai와 pcap-filter로 각각 만들어, 필터 없이 전부 통과시키는 baseline과 비교했다.
+    평가는 필터 F1–F10을 Kunai로 만들고, 필터 없이 전부 통과시키는 baseline 대비 처리율 감소를 측정했다.
+    F1–F5는 pcap-filter로도 만들어 비교했고, VLAN 중첩, 터널 안쪽 헤더, SRv6 세그먼트나 TCP 옵션처럼 개수가 가변인 원소를 다루는 F6–F10은 pcap-filter로 표현할 수 없었다.
     Kunai로 만든 필터는 모두 verifier에 로드되었고 검증 시 처리한 명령어 수도 한도(100만) 안이었다(최대 약 20만, F10).
-    처리율 감소는 pcap-filter와 비슷해, 더 넓은 표현력을 비슷한 성능으로 제공했다.
+    처리율 감소는 단순한 필터에서 2% 이하로 pcap-filter와 비슷했고, pcap-filter로 표현할 수 없는 F6–F10에서도 최대 7.3%였다.
   </p>
 
   <p>
@@ -50,7 +52,8 @@
   </p>
 
   <p>
-    실험 환경은 <a href="https://github.com/clapppp/ebpf-net-experiments">ebpf-net-experiments</a> 레포에 올려 두었다.
+    실험 환경은 <a href="https://github.com/clapppp/ebpf-net-experiments">ebpf-net-experiments</a> 레포에 올려 두었고,
+    실행 스크립트는 <code>packet-monitor.sh</code>이다.
   </p>
 
   <iframe src="../files/Kunai-review.pdf#view=FitH" width="100%" height="400" title="Kunai 논문 리뷰"></iframe>

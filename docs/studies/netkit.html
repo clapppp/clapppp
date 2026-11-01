@@ -14,7 +14,7 @@
 
   <p>
     <em>Netkit: Specializing Linux Packet Delivery for Container Networks</em><br>
-    Daniel Borkmann, Paul Chaignon · eBPF'26
+    Daniel Borkmann et al. · eBPF'26
   </p>
 
   <p>
@@ -50,7 +50,7 @@
   <p>
     결과는 논문의 설명과 같았다.
     BPF 없이 호스트 라우팅으로 중계하면 ping 10회 왕복에서 네 디바이스가 각각 10번씩, 총 40번 backlog에 들어갔다.
-    peer 쪽에 redirect BPF를 붙이면 호스트 쪽(primary) 디바이스의 backlog 진입이 사라져 총 20번으로 줄었다.
+    primary에 peer 송신용 redirect BPF를 붙여 상대 primary로 바로 보내면, 호스트 쪽(primary) 디바이스의 backlog 진입이 사라져 총 20번으로 줄었다.
     남은 20번은 받는 컨테이너 쪽에서 송신에서 수신으로 넘어가는 전환으로, 제거할 수 없는 1번에 해당한다.
   </p>
 
