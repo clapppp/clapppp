@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">  <title>Kunai 논문 리뷰</title>
+  <style>body { max-width: 36em; margin: 4em auto; padding: 0 1em; text-align: center; }</style>
+</head>
+<body>
+  <p><a href="../index.html">home</a> · <a href="../studies.html">studies</a></p>
+
+  <h1>Kunai 논문 리뷰</h1>
+  <p><small>2026-10-29 · 개별연구 9주차</small></p>
+
+  <p>
+    <em>Kunai: Toward a Verifier-Safe Layered DSL for Nested Encapsulation Packet Filtering on eBPF</em><br>
+    Takeru Hayasaka et al. · eBPF'26
+  </p>
+
+  <p>
+    패킷 필터는 헤더 위치를 알아야 원하는 필드를 비교할 수 있다.
+    그런데 IPv4 옵션이나 GTP 확장 헤더처럼 길이와 개수가 가변인 헤더가 있으면 오프셋을 컴파일 타임에 계산할 수 없고,
+    터널링으로 캡슐화가 중첩되면 outer · inner IPv4처럼 같은 이름의 헤더를 구분할 수 없다.
+    기존의 pcap-filter(cBPF)는 반복문과 중첩 구조를 표현할 문법이 없고,
+    P4-to-eBPF는 런타임 가변 길이 접근과, 콜백을 정해진 횟수만큼 반복 실행하는 BPF 헬퍼 함수 <code>bpf_loop</code>를 지원하지 않아 고정 구조만 처리할 수 있다.
+  </p>
+
+  <p>
+    이 논문은 필터식과 P4 헤더 · 파서 정의를 입력받아 verifier를 통과하는 eBPF 바이트코드를 생성하는 DSL인 Kunai를 제안한다.
+    가변 길이 헤더는 패킷을 한 번 훑으며 각 헤더의 시작점을 스택에 기록하고, 접근할 때마다 <code>data_end</code> 범위 검사를 넣어 해결한다.
+    가변 개수 헤더는 상한이 작으면 반복을 펼치고(unroll), 크거나 없으면 상수 상한을 둔 <code>bpf_loop</code>로 생성해 종료를 보장한다.
+    중첩 캡슐화는 <code>ipv6@outer</code>, <code>ipv6@inner</code>처럼 라벨을 붙여 구분한다.
+  </p>
+
+  <p>
+    평가는 필터 F1–F10을 Kunai와 pcap-filter로 각각 만들어, 필터 없이 전부 통과시키는 baseline과 비교했다.
+    Kunai로 만든 필터는 모두 verifier에 로드되었고 검증 시 처리한 명령어 수도 한도(100만) 안이었다(최대 약 20만, F10).
+    처리율 감소는 pcap-filter와 비슷해, 더 넓은 표현력을 비슷한 성능으로 제공했다.
+  </p>
+
+  <p>
+    추가로 Netkit 리뷰에서 만든 환경을 이어 써서, 디바이스 구성에 따라 받는 쪽에서 보이는 패킷 헤더가 어떻게 달라지는지 관측했다.
+    같은 ping 1회를 A. veth + 호스트 라우팅, B. netkit(L3 모드), C. netkit + redirect BPF 세 환경에서 보내고,
+    받는 컨테이너의 디바이스에서 bpftrace로 헤더 42바이트(Ethernet · IPv4 · ICMP)를 기록했다.
+  </p>
+
+  <p>
+    MAC 주소는 호스트가 링크마다 새로 쓰는 A에서만 값이 있었고, ARP를 쓰지 않는 netkit L3 모드인 B와 C는 0이었다.
+    TTL은 호스트 라우터를 거친 A와 B에서 63, redirect BPF로 호스트 라우팅을 건너뛴 C에서 64였다.
+  </p>
+
+  <p>
+    실험 환경은 <a href="https://github.com/clapppp/ebpf-net-experiments">ebpf-net-experiments</a> 레포에 올려 두었다.
+  </p>
+
+  <iframe src="../files/Kunai-review.pdf#view=FitH" width="100%" height="400" title="Kunai 논문 리뷰"></iframe>
+</body>
+</html>

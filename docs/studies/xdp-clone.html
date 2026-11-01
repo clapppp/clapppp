@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">  <title>XDP_CLONE 논문 리뷰</title>
+  <style>body { max-width: 36em; margin: 4em auto; padding: 0 1em; text-align: center; }</style>
+</head>
+<body>
+  <p><a href="../index.html">home</a> · <a href="../studies.html">studies</a></p>
+
+  <h1>XDP_CLONE 논문 리뷰</h1>
+  <p><small>2026-10-07 · 개별연구 6주차</small></p>
+
+  <p>
+    <em>XDP_CLONE: Efficient In-Driver Packet Duplication for eBPF-Accelerated Systems</em><br>
+    Marco Mazzella et al. · eBPF'26
+  </p>
+
+  <p>
+    개별연구(eBPF를 활용한 OS 연구) 수업에서 탐구 분야를 정하기 위해 진행한 논문 리뷰이다.
+  </p>
+
+  <p>
+    리눅스의 패킷 수신은 다음과 같이 이루어진다.
+    NIC가 DMA로 패킷을 RAM의 수신 링 버퍼에 쓰고 인터럽트를 발생시키면,
+    하드웨어 인터럽트 핸들러는 후처리(softirq)를 예약하고 빠르게 끝난다.
+    후처리에서 드라이버의 <code>poll()</code>이 XDP 프로그램 실행, sk_buff 생성,
+    <code>netif_receive_skb()</code> 호출 순으로 패킷을 처리한다.
+  </p>
+
+  <p>
+    기존의 패킷 복제는 XDP 단계에서는 복사본마다 다르게 수정할 수 없었고,
+    TC 단계에서는 복사본마다 sk_buff를 할당하는 비용이 들었다.
+    이 논문은 드라이버에 <code>XDP_CLONE_TX</code> · <code>XDP_CLONE_PASS</code> 리턴 코드 처리를 추가해
+    XDP 단계에서 패킷 복제를 구현했다.
+  </p>
+
+  <p>
+    MPI 브로드캐스트와 Pub-Sub 브로커를 XDP_CLONE으로 구현해 TC 방식과 비교했고,
+    복제 수가 늘어날수록 복사본별 sk_buff 할당 비용이 누적되어 두 방식의 격차가 벌어졌다.
+  </p>
+
+  <iframe src="../files/XDP_CLONE-review.pdf#view=FitH" width="100%" height="400" title="XDP_CLONE 논문 리뷰"></iframe>
+</body>
+</html>

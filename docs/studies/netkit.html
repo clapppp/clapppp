@@ -7,7 +7,7 @@
   <style>body { max-width: 36em; margin: 4em auto; padding: 0 1em; text-align: center; }</style>
 </head>
 <body>
-  <p><a href="../studies.html">공부한 것들</a></p>
+  <p><a href="../index.html">home</a> · <a href="../studies.html">studies</a></p>
 
   <h1>Netkit 논문 리뷰</h1>
   <p><small>2026-10-15 · 개별연구 7주차</small></p>
@@ -18,12 +18,47 @@
   </p>
 
   <p>
-    컨테이너끼리 통신할 때 패킷이 veth 쌍을 거치면서 backlog 큐를 불필요하게 두 번 지나는 문제와,
-    netkit 디바이스와 <code>bpf_redirect_peer()</code>로 이를 줄이는 설계를 정리했습니다.
-    평가에서는 veth 대비 처리량이 크게 늘고 호스트 네트워킹과 오차 범위 내로 비슷했으며,
-    직접 구성한 실험에서는 ping 한 번에 backlog로 들어간 횟수가 40번에서 20번으로 줄었습니다.
+    리눅스 컨테이너는 보통 veth 쌍으로 호스트 네트워크 네임스페이스와 연결된다.
+    veth는 송신 함수에서 패킷을 backlog 큐에 넣고, 수신 측이 이를 꺼내 처리하는 방식으로 송신과 수신 스택을 분리한다.
+    그래서 같은 머신의 컨테이너끼리 통신해도 컨테이너 → 호스트, 호스트 → 컨테이너에서 backlog를 두 번 거치고,
+    호스트 스택을 한 번 더 통과한다. 라우팅과 정책 결정은 필요하지만, backlog 재진입은 불필요한 비용이다.
   </p>
 
-  <iframe src="../files/netkit-review.pdf#view=FitH" width="100%" height="400" title="Netkit 논문 리뷰"></iframe>
+  <p>
+    이 논문은 두 가지로 이 경로를 줄인다.
+    수신 측에서는 호스트의 tc BPF가 <code>bpf_redirect_peer()</code>로 skb의 디바이스만 컨테이너 쪽으로 바꿔 backlog 없이 바로 진입시키고,
+    송신 측에서는 새 netkit 디바이스가 <code>netkit_xmit()</code>에서 BPF를 실행해 NIC로 바로 보낸다.
+    netkit은 BPF를 호스트 쪽(primary)에만 붙일 수 있는 비대칭 구조라 컨테이너가 이를 건드릴 수 없어 격리도 강화된다.
+  </p>
+
+  <p>
+    평가는 세 환경을 비교했다. 기존 Cilium(veth + BPF), veth를 netkit으로 교체한 Cilium + netkit,
+    그리고 컨테이너 없이 호스트 네임스페이스를 직접 쓰는 Host다.
+    TCP_RR(연결 하나로 요청-응답 반복)과 TCP_CRR(매번 연결 생성 · 종료)의 처리량에서
+    netkit은 veth보다 크게 향상되어 Host와 오차 범위 내로 비슷했다.
+    수신 측 CPU 사용량에서는 eBPF로 netfilter conntrack을 우회하고 backlog도 생략하는 netkit이
+    두 이점을 모두 가져, 연결 생성 · 삭제가 반복되는 TCP_CRR에서 가장 낮았다.
+  </p>
+
+  <p>
+    논문에서 제안한 netkit이 리눅스 메인라인(6.7)에 반영되어 있다는 점을 보고, 직접 환경을 구성해 backlog 진입 횟수를 관측했다.
+    한 서버에서 두 컨테이너를 netns로 격리하고 각각 netkit 쌍(primary · peer)으로 호스트와 연결한 뒤,
+    컨테이너 A에서 B로 ping을 보냈다.
+    관측은 backlog에 넣기 직전에 발생하는 <code>netif_rx</code> tracepoint에 bpftrace를 붙여 디바이스별로 횟수를 셌다.
+  </p>
+
+  <p>
+    결과는 논문의 설명과 같았다.
+    BPF 없이 호스트 라우팅으로 중계하면 ping 10회 왕복에서 네 디바이스가 각각 10번씩, 총 40번 backlog에 들어갔다.
+    peer 쪽에 redirect BPF를 붙이면 호스트 쪽(primary) 디바이스의 backlog 진입이 사라져 총 20번으로 줄었다.
+    남은 20번은 받는 컨테이너 쪽에서 송신에서 수신으로 넘어가는 전환으로, 제거할 수 없는 1번에 해당한다.
+  </p>
+
+  <p>
+    실험 환경은 <a href="https://github.com/clapppp/ebpf-net-experiments">ebpf-net-experiments</a> 레포에 올려 두었고,
+    실행 스크립트는 <code>backlog-count.sh</code>이다.
+  </p>
+
+  <iframe src="../files/Netkit-review.pdf#view=FitH" width="100%" height="400" title="Netkit 논문 리뷰"></iframe>
 </body>
 </html>
