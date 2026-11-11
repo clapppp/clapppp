@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">  <title>UDP 소켓 드롭 비용</title>
+  <style>body { max-width: 36em; margin: 4em auto; padding: 0 1em; text-align: center; }</style>
+</head>
+<body>
+  <p><a href="../index.html">home</a> · <a href="../studies.html">studies</a></p>
+
+  <h1>UDP 소켓 드롭 비용</h1>
+  <p><small>2026-11-12 · 개별연구 11주차</small></p>
+
+  <p>
+    수신 처리율을 넘는 UDP 트래픽에서 소켓 레벨 드롭이 쓰는 CPU를 측정한 실험이다.
+  </p>
+
+  <p>
+    TCP는 흐름 제어가 있어 수신 측이 느리면 송신 측이 속도를 낮춘다.
+    UDP는 흐름 제어가 없어 소켓 버퍼가 차도 패킷이 계속 도착하고, 소켓 큐 직전에서 드롭된다.
+    그런데 드롭될 패킷도 그 직전까지 skb 생성, IP · UDP 처리, 소켓 조회를 softirq에서 모두 거치므로,
+    수신 코어의 CPU를 의미 없이 쓰게 된다.
+  </p>
+
+  <p>
+    물리 코어 3개를 격리해 송신(호스트), 수신(VM vCPU0), 모니터링(VM vCPU1)에 하나씩 고정했다.
+    수신 · 모니터링을 VM에 두어 패킷이 실제 NIC 경로를 거치고, 수신 코어가 드라이버부터 소켓 큐까지 softirq 전 과정을 처리하도록 했다.
+    서버는 패킷당 20µs를 써서 수신 속도를 50,000 pps로 고정하고, 클라이언트는 64B UDP를 1배 · 2배 · 4배(50,000 · 100,000 · 200,000 pps) 속도로 10초씩 보냈다.
+  </p>
+
+  <p>
+    처리 패킷은 <code>Udp InDatagrams</code>, 드롭 패킷은 <code>Udp RcvbufErrors</code>로 셌고,
+    softirq 점유량은 bpftrace로 수신 코어의 <code>softirq_entry</code> · <code>softirq_exit</code>(NET_RX) 사이 시간을 누적해 전체 시간으로 나눠 구했다.
+    송신이 빨라질수록 드롭될 패킷의 수신 처리가 늘어 softirq 점유량은 오르고, 처리 패킷은 CPU를 빼앗겨 오히려 줄 것으로 예상했다.
+  </p>
+
+  <p>
+    1배 → 4배에서 softirq 점유량은 13.4% → 46.5%로 올랐고(드롭 4,110 → 175,384 pps),
+    처리 패킷은 45,888 → 24,607 pps로 46% 감소해 예상한 두 가지를 모두 확인했다.
+    1배에서도 소량 드롭이 생긴 건 <code>recv()</code> 시간이 더해져 실제 처리 속도가 명목값보다 낮았기 때문이다.
+  </p>
+
+  <p>
+    즉 UDP 수신 용량 초과는 같은 코어의 다른 처리에도 영향을 준다.
+    XDP 단계에서 수신 현황을 보고 미리 드롭하면 이 비용을 줄일 수 있을 것으로 기대한다.
+  </p>
+
+  <p>
+    실험 환경은 <a href="https://github.com/clapppp/ebpf-net-experiments">ebpf-net-experiments</a> 레포에 올려 두었고,
+    실행 스크립트는 <code>udp-xdp-drop.sh</code>이다.
+  </p>
+
+  <iframe src="../files/UDP-drop.pdf#view=FitH" width="100%" height="400" title="UDP 소켓 드롭 비용"></iframe>
+</body>
+</html>
