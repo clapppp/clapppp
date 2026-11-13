@@ -20,15 +20,18 @@
   <p>
     리눅스 컨테이너는 보통 veth 쌍으로 호스트 네트워크 네임스페이스와 연결된다.
     veth는 송신 함수에서 패킷을 backlog 큐에 넣고, 수신 측이 이를 꺼내 처리하는 방식으로 송신과 수신 스택을 분리한다.
-    그래서 같은 머신의 컨테이너끼리 통신해도 컨테이너 → 호스트, 호스트 → 컨테이너에서 backlog를 두 번 거치고,
-    호스트 스택을 한 번 더 통과한다. 라우팅과 정책 결정은 필요하지만, backlog 재진입은 불필요한 비용이다.
+    그래서 같은 머신의 컨테이너끼리 통신해도 컨테이너 → 호스트, 호스트 → 컨테이너에서 backlog를 두 번 거친다.
+    호스트에서 라우팅과 정책 결정은 필요하지만, backlog 중복은 불필요한 비용이다.
   </p>
 
   <p>
     이 논문은 두 가지로 이 경로를 줄인다.
-    수신 측에서는 호스트의 tc BPF가 <code>bpf_redirect_peer()</code>로 skb의 디바이스만 컨테이너 쪽으로 바꿔 backlog 없이 바로 진입시키고,
+    수신 측에서는 호스트의 tc BPF가 <code>bpf_redirect_peer()</code>로 skb의 디바이스만 컨테이너 쪽으로 바꾼다.
+    디바이스를 바꾸는것은 패킷이 속한 네트워크 네임스페이스를 바꾸는것과 같은 의미이다. 
+    따라서 backlog 없이 바로 컨테이너 내부 컨텍스트에서 처리된다.
     송신 측에서는 새 netkit 디바이스가 <code>netkit_xmit()</code>에서 BPF를 실행해 NIC로 바로 보낸다.
-    netkit은 BPF를 호스트 쪽(primary)에만 붙일 수 있는 비대칭 구조라 컨테이너가 이를 건드릴 수 없어 격리도 강화된다.
+    이때 netkit은 기존 디바이스와 달리 BPF를 netns를 전환하고 실행한다. 
+    따라서 컨테이너에 붙은 BPF가 외부 NIC를 조회할 수 있게 되고, NIC으로 전환이 가능해진다.
   </p>
 
   <p>
@@ -52,11 +55,6 @@
     BPF 없이 호스트 라우팅으로 중계하면 ping 10회 왕복에서 네 디바이스가 각각 10번씩, 총 40번 backlog에 들어갔다.
     primary에 peer 송신용 redirect BPF를 붙여 상대 primary로 바로 보내면, 호스트 쪽(primary) 디바이스의 backlog 진입이 사라져 총 20번으로 줄었다.
     남은 20번은 받는 컨테이너 쪽에서 송신에서 수신으로 넘어가는 전환으로, 제거할 수 없는 1번에 해당한다.
-  </p>
-
-  <p>
-    실험 환경은 <a href="https://github.com/clapppp/ebpf-net-experiments">ebpf-net-experiments</a> 레포에 올려 두었고,
-    실행 스크립트는 <code>backlog-count.sh</code>이다.
   </p>
 
   <iframe src="../files/Netkit-review.pdf#view=FitH" width="100%" height="400" title="Netkit 논문 리뷰"></iframe>
