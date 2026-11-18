@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">  <title>UDP 수신 처리와 XDP</title>
+  <style>body { max-width: 36em; margin: 4em auto; padding: 0 1em; text-align: center; }</style>
+</head>
+<body>
+  <p><a href="../index.html">home</a> · <a href="../studies.html">studies</a></p>
+
+  <h1>UDP 수신 처리와 XDP</h1>
+  <p><small>2026-11-19 · 개별연구 12주차</small></p>
+
+  <p>
+    수신 용량을 넘는 UDP 트래픽을 소켓에서 드롭할 때와 XDP에서 드롭할 때,
+    같은 코어의 다른 작업에 CPU가 얼마나 남는지 비교한 실험이다.
+  </p>
+
+  <p>
+    <a href="udp-drop.html">지난 실험</a>에서는 서버가 패킷당 20µs를 써서 수신 속도를 고정했는데,
+    수신 속도를 제한하는 프로세스보다 CPU 현황을 조회하는 프로세스를 두는 게 실험 목적에 더 맞다는 피드백을 받았다.
+    그래서 이번에는 서버는 bind만 하고 읽지 않아 도착한 패킷을 전부 드롭시키고,
+    남는 CPU를 전부 쓰며 카운터를 올리는 전용 프로세스 soak을 수신 코어에 함께 두어
+    트래픽이 없을 때의 초당 증가량 대비 비율(soak_%)을 다른 작업에 남는 CPU로 삼았다.
+    또 지난번 bpftrace 측정은 softirq 시작 · 끝마다 BPF 프로브가 초당 10만 회 이상 실행되어
+    측정 비용만 vCPU0의 30%를 넘었는데, soak 카운터로 바꾸면서 이 문제도 없앴다.
+  </p>
+
+  <p>
+    송신(호스트 CPU 1), 수신 · 측정 대상(VM vCPU0 = CPU 3), 모니터링(VM vCPU1 = CPU 4)에 코어를 하나씩 고정했다.
+    CPU 3에서는 NIC IRQ · softirq · XDP 수신 처리와 soak이 코어를 나눠 쓴다.
+    패킷은 client → tap · vhost → virtio-net → (XDP) → 소켓 순으로 지나고,
+    XDP 프로그램은 skb 생성 전에 목적지 UDP 소켓을 조회해 수신 버퍼가 가득 찼으면 DROP한다.
+    64B UDP를 1 · 4 · 8배(50,000 · 200,000 · 400,000 pps)로 5초씩 보냈다.
+  </p>
+
+  <p>
+    소켓 드롭(sock)에서 soak은 75.0% → 26.4% → 6.8%로 떨어졌다.
+    수신 처리는 soak보다 우선순위가 높아 송신량이 늘수록 코어를 먼저 차지한다.
+    XDP 드롭(xdp)에서는 81.1% → 48.5% → 39.6%로,
+    sock 대비 1배 +6.1%p · 4배 +22.2%p · 8배 +32.8%p, 8배에서 남는 CPU가 5.9배였다.
+  </p>
+
+  <p>
+    IRQ 수는 두 방식 모두 초당 12~13만에서 멈췄다(IRQ당 패킷 1.0 → 3.3개).
+    처음에는 IRQ 처리 중 다음 패킷이 도착해 함께 처리되기 때문이라고 생각했지만,
+    처리 시간이 다른 sock과 xdp가 같은 상한을 보여 원인은 호스트 vhost의 가상 인터럽트 주입 주기(약 7~8µs)였다.
+    따라서 두 방식의 차이는 IRQ 수가 아니라 패킷당 처리 비용에서 나온다.
+  </p>
+
+  <p>
+    4배 기준으로 IRQ 1회 주기(약 7.8µs)를 나누면, IRQ 고정 비용 3.3µs는 공통이고
+    패킷당 비용은 sock 1.3~1.7µs(skb 할당 · IP · UDP 처리), xdp 0.47µs(소켓 조회 · 버퍼 검사)로
+    패킷당 약 1µs를 줄여 soak 몫이 2.0µs → 3.9µs로 늘었다.
+  </p>
+
+  <p>
+    송신 쪽에서는 <code>send()</code> 1회가 UDP · IP · 브리지 · tap을 동기로 거쳐 약 3.6µs가 걸려 27만 pps가 상한이었고,
+    AF_PACKET으로 vnet0에 직접 보내 40만 pps를 만들었다.
+  </p>
+
+  <iframe src="../files/UDP-drop-XDP.pdf#view=FitH" width="100%" height="400" title="UDP 수신 처리와 XDP"></iframe>
+</body>
+</html>
